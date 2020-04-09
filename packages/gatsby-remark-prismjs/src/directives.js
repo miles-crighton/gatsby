@@ -54,6 +54,20 @@ const highlightWrap = line =>
   [`<span class="gatsby-highlight-code-line">`, line, `</span>`].join(``)
 // const wrapAndStripComment = line => wrap(stripComment(line))
 
+/**
+ * List of lines removed by feature directives
+ * -------------------------------------------
+ * highlight-line : removes 0 lines
+ * highlight-next-line : removes 1 line
+ * highlight-start/end : removes 2 line
+ * highlight-range{1, 4-6} : removes 1 line
+ *
+ * hide-line : removes 1 line
+ * hide-next-line : removes 2 lines
+ * hide-start/end : removed diff between start/end + 2
+ * hide-range{1, 4-6} : removed lines selected + 1
+ */
+
 const parseLine = (line, code, index, actions) => {
   const [, feature, directive, directiveRange] = line.match(DIRECTIVE)
   const flagSource = {
@@ -63,6 +77,11 @@ const parseLine = (line, code, index, actions) => {
   }
   switch (directive) {
     case `next-line`:
+      if (feature === `hide`) {
+        actions.linesRemoved(2)
+      } else if (feature === `highlight`) {
+        actions.linesRemoved(1)
+      }
       actions.flag(feature, index + 1, flagSource)
       actions.hide(index)
       break
@@ -74,19 +93,27 @@ const parseLine = (line, code, index, actions) => {
 
       const end = endIndex === -1 ? code.length : endIndex
 
+      actions.linesRemoved(2)
       actions.hide(index)
       actions.hide(end)
 
       for (let i = index + 1; i < end; i++) {
+        if (feature === `hide`) {
+          actions.linesRemoved(1)
+        }
         actions.flag(feature, i, flagSource)
       }
       break
     }
     case `line`:
+      if (feature === `hide`) {
+        actions.linesRemoved(1)
+      }
       actions.flag(feature, index, flagSource)
       actions.stripComment(index)
       break
     case `range`:
+      actions.linesRemoved(1)
       actions.hide(index)
 
       if (directiveRange) {
@@ -94,6 +121,9 @@ const parseLine = (line, code, index, actions) => {
         const range = rangeParser.parse(strippedDirectiveRange)
         if (range.length > 0) {
           range.forEach(relativeIndex => {
+            if (feature === `hide`) {
+              actions.linesRemoved(1)
+            }
             actions.flag(feature, index + relativeIndex, flagSource)
           })
           break
@@ -106,6 +136,8 @@ const parseLine = (line, code, index, actions) => {
 }
 
 module.exports = function highlightLineRange(code, highlights = []) {
+  let linesRemoved = 0
+
   if (highlights.length > 0 || HIGHLIGHT_DIRECTIVE.test(code)) {
     // HACK split plain-text spans with line separators inside into multiple plain-text spans
     // separated by line separator - this fixes line highlighting behaviour for jsx
@@ -132,6 +164,7 @@ module.exports = function highlightLineRange(code, highlights = []) {
     stripComment: line => {
       lines[line].code = stripComment(lines[line].code)
     },
+    removeLines: count => (linesRemoved += count),
   }
 
   const transform = lines =>
@@ -166,7 +199,7 @@ module.exports = function highlightLineRange(code, highlights = []) {
     highlights.forEach(lineNumber => {
       actions.highlight(lineNumber - 1)
     })
-    return transform(lines)
+    return { codeSplits: transform(lines) }
   }
 
   for (let i = 0; i < split.length; i++) {
@@ -176,5 +209,5 @@ module.exports = function highlightLineRange(code, highlights = []) {
     }
   }
 
-  return transform(lines)
+  return { codeSplits: transform(lines), linesRemoved }
 }

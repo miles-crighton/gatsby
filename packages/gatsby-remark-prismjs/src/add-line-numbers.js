@@ -1,4 +1,4 @@
-module.exports = (code = []) => {
+module.exports = (code = [], linesRemoved = 0) => {
   // Generate as many `<span></span>` as there are code lines
   const generateSpans = numberOfLines => {
     let spans = ``
@@ -8,7 +8,8 @@ module.exports = (code = []) => {
     return spans
   }
 
-  const numberOfLines = code.length === 0 ? 0 : code.split(`\n`).length
+  const numberOfLines =
+    code.length === 0 ? 0 : code.split(`\n`).length - linesRemoved
 
   // Generate the container for the line numbers.
   // Relevant code in the Prism Line Numbers plugin can be found here:

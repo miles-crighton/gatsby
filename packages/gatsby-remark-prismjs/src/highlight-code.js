@@ -41,7 +41,10 @@ module.exports = (
 
   const grammar = Prism.languages[language]
   const highlighted = Prism.highlight(code, grammar, language)
-  const codeSplits = handleDirectives(highlighted, lineNumbersHighlight)
+  const { codeSplits, linesRemoved } = handleDirectives(
+    highlighted,
+    lineNumbersHighlight
+  )
 
   let finalCode = ``
   const lastIdx = codeSplits.length - 1 // Don't add back the new line character after highlighted lines
@@ -52,5 +55,5 @@ module.exports = (
       ? split.code
       : `${split.code}${idx == lastIdx ? `` : `\n`}`
   })
-  return finalCode
+  return { highlightedCode: finalCode, linesRemoved }
 }
