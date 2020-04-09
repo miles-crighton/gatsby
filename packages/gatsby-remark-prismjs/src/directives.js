@@ -78,9 +78,9 @@ const parseLine = (line, code, index, actions) => {
   switch (directive) {
     case `next-line`:
       if (feature === `hide`) {
-        actions.linesRemoved(2)
+        actions.removeLines(2)
       } else if (feature === `highlight`) {
-        actions.linesRemoved(1)
+        actions.removeLines(1)
       }
       actions.flag(feature, index + 1, flagSource)
       actions.hide(index)
@@ -93,13 +93,13 @@ const parseLine = (line, code, index, actions) => {
 
       const end = endIndex === -1 ? code.length : endIndex
 
-      actions.linesRemoved(2)
+      actions.removeLines(2)
       actions.hide(index)
       actions.hide(end)
 
       for (let i = index + 1; i < end; i++) {
         if (feature === `hide`) {
-          actions.linesRemoved(1)
+          actions.removeLines(1)
         }
         actions.flag(feature, i, flagSource)
       }
@@ -107,13 +107,13 @@ const parseLine = (line, code, index, actions) => {
     }
     case `line`:
       if (feature === `hide`) {
-        actions.linesRemoved(1)
+        actions.removeLines(1)
       }
       actions.flag(feature, index, flagSource)
       actions.stripComment(index)
       break
     case `range`:
-      actions.linesRemoved(1)
+      actions.removeLines(1)
       actions.hide(index)
 
       if (directiveRange) {
@@ -122,7 +122,7 @@ const parseLine = (line, code, index, actions) => {
         if (range.length > 0) {
           range.forEach(relativeIndex => {
             if (feature === `hide`) {
-              actions.linesRemoved(1)
+              actions.removeLines(1)
             }
             actions.flag(feature, index + relativeIndex, flagSource)
           })
